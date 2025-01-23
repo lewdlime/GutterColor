@@ -186,7 +186,8 @@ class Line:
 
   def color(self):
     """Returns the color in the line, if any."""
-    textual_colors = self.settings.get("textual_colors")
+    if self.web_color():
+      return self.web_color()
     if self.hex_color():
       return self.hex_color()
     if self.rgb_color():
@@ -197,21 +198,19 @@ class Line:
       return self.hsl_color()
     if self.hsla_color():
       return self.hsla_color()
-    if textual_colors and self.web_color():
-      return self.web_color()
     if not self.settings.get("custom_colors") == None:
       return self.custom_color()
 
   def generate_webcolors(self):
     """Generates a list of web color names."""
     self.WEB_COLORS = dict((name, color) for (name, color) in css3_names_to_hex.items())
-    self.WEB_COLORS_REGEX = '[\\s:](' + '|'.join(self.WEB_COLORS.keys()) + ')[\\s;]'
+    self.WEB_COLORS_REGEX = '((?<!\$)'+ '|(?<!\$)'.join(self.WEB_COLORS.keys()) +')'
 
   def web_color(self):
     """Returns the color in the line, if any CSS color name is found."""
     matches = re.search(self.WEB_COLORS_REGEX, self.text)
     if matches:
-      return matches.group(1)
+      return matches.group(0)
 
   def hex_color(self):
     """Returns the color in the line, if any hex is found."""
@@ -307,7 +306,7 @@ class Line:
 
     if ( platform.system()=="Windows"):
       delimiter = ";"
-      convert_name = "convert.exe"
+      convert_name = "magick.exe"
     else:
       delimiter = ":"
       convert_name = "convert"
@@ -316,12 +315,10 @@ class Line:
     paths.extend(os.environ['PATH'].split(delimiter))
 
     convert_path = None
-    WINDOWS_PATH = os.path.join("C:\\Windows\\System32\\convert.exe")
     for path in paths:
       if not path.endswith(convert_name):
         path = os.path.join(path,convert_name)
-      if os.path.isfile(path) and os.access(path, os.X_OK) \
-          and not os.path.samefile(path, WINDOWS_PATH):
+      if os.path.isfile(path) and os.access(path, os.X_OK):
         convert_path = path
         break
 
